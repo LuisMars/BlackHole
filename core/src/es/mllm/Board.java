@@ -20,6 +20,8 @@ public class Board {
     private int turn = 0;
     private boolean gameOver = false;
 
+    static GameStage stage;
+
     public Board(Chip[][] chips, Stack<Chip> red_chips, Stack<Chip> blue_chips, int turn, boolean gameOver) {
         this.chips = new Chip[chips.length][chips[0].length];
         for (int i = 0; i < chips.length; i++) {
@@ -49,8 +51,8 @@ public class Board {
         this.gameOver = gameOver;
     }
 
-    public Board() {
-
+    public Board(GameStage stage) {
+        Board.stage = stage;
     }
 
     public void addBoard(Table table) {
@@ -96,7 +98,7 @@ public class Board {
             }
             Chip chip = new Chip(-1, -1, 1, i);
             red_chips.push(chip);
-            red_chips_table.add(chip);
+            red_chips_table.add(chip).size(32);
         }
     }
 
@@ -108,7 +110,7 @@ public class Board {
             }
             Chip chip = new Chip(-1, -1, 0, i);
             blue_chips.push(chip);
-            blue_chips_table.add(chip);
+            blue_chips_table.add(chip).size(32);
         }
     }
 
@@ -139,14 +141,18 @@ public class Board {
         List<Board> nextStates = getNextStates();
         Board nextState = nextStates.get(MathUtils.random(nextStates.size() - 1));
 
+        Chip nextChip = getNextChip();
+
         for (int i = 0; i < chips.length; i++) {
             for (int j = 0; j <= i; j++) {
                 Chip chip = nextState.chips[i][j];
-                chips[i][j].setMove(chip);
+                Chip boardChip = chips[i][j];
+                if (!chip.equals(boardChip) && chip.equals(nextChip)) {
+                    boardChip.playMove(nextChip);
+                }
             }
         }
 
-        getNextChip();
         gameOver = nextState.gameOver;
 
     }
@@ -158,7 +164,7 @@ public class Board {
         } else {
             chip = red_chips.pop();
         }
-        chip.remove();
+        //chip.remove();
         turn = (1 + turn) % 2;
 
         return chip;
@@ -181,6 +187,9 @@ public class Board {
     public boolean checkForEndGame() {
 
         if (blue_chips.size() != 0 || red_chips.size() != 0) {
+            if (getTurn() == 1 && !isGameOver()) {
+                play();
+            }
             return false;
         }
 
@@ -215,7 +224,6 @@ public class Board {
         addToList(lastChips, x + 1, y);
         addToList(lastChips, x + 1, y + 1);
 
-        printBoard();
 
         for (Chip[] row : chips) {
             for (Chip chip : row) {
@@ -237,7 +245,7 @@ public class Board {
         }
         System.out.println("Red:  " + red_points);
         System.out.println("Blue: " + blue_points);
-        System.out.println(lastChips);
+
         return true;
     }
 
@@ -277,4 +285,9 @@ public class Board {
             play();
         }
     }
+
+    public boolean canPlayHuman() {
+        return !isGameOver() && getTurn() == 0 && stage.isActionFinished();
+    }
+
 }
